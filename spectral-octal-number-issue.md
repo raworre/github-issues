@@ -1,18 +1,15 @@
-# Non-Octal Numbers In Unquoted Strings
+# Falsely Identifying Strings as Octals
 
 ## Issue Description
 
 When linting OpenAPI 3.x.x specifications, Spectral lint is not appropriately
-parsing strings per the YAML specification. This issue presents itself when
-strings that are made up of numbers that begin with the digit `0`, and contain
-the digits `8` and `9`, are not quoted in the OpenAPI specification.
+parsing strings per the YAML specification. This issue seems to present itself
+when strings that are made up of numbers that begin with the digit `0`, and
+contain the digits `8` or `9`, are not quoted in the OpenAPI specification.
 
-Per the [Integer Language-Independent Type for YAML Version 1.1](https://yaml.org/type/int.html),
-octal integers can be represented by numbers that begin with the digit `0`.
-However, integers can not have any digit greater than `7` in their
-representation.
-YAML specification dictates that any integer that does not match valid integer
-values, as defined in the link above, should be treated as strings.
+Since these are not valid octal strings, Spectral should be parsing these as
+the YAML [!!str](https://yaml.org/type/str.html) type as opposed to the
+[!!int](https://yaml.org/type/int.html) type.
 
 ## Steps to Reproduce
 
@@ -66,8 +63,7 @@ components:
           - 01981
 ```
 
-Given the above OpenAPI specification, when linting we will get the following
-error from Spectral:
+When linting the above OpenAPI specification, we get the following error.
 
 ```sh
 OpenAPI 3.x detected
@@ -80,28 +76,18 @@ c:/Source/enterprise-apis/apis/test/test.yaml
 ✖ 3 problems (2 errors, 1 warning, 0 infos, 0 hints)
 ```
 
-> The warning identified at location 35:15 ("Example should have either a
-> `value` or `externalValue` field") is related to
-> [Issue 883](https://github.com/stoplightio/spectral/issues/883).
-
-In the example above, the items `08`, `09`, and `01981` are not parsed by
-Spectral as strings.
-However, these are not valid number representations, as they begin with the `0`
-digit, indicating an octal number, but contain invalid octal digits.
-Quoted strings in the list are valid representations of octal numbers and thus
-must be quoted in order to be read in as strings.
+In the example above, the error at location `44:13` references the array example
+item `08`.
+Spectral seem to be incorrectly interpereting these values as octals rather than
+strings.
 
 ## Expected Behavior
 
-Per the YAML specification, any number that begins with the digit `0` could be
-an octal representation. However, any non-octal digits present in the number
-(e.g. `8` and `9`), should invalidate the octal representation and thus be
-treated like any other non-numeric representation and parsed as a string.
+Per the YAML specification, the given example should be valid.
 
 ## Environment
 
 * Spectral Version: 5.0.0
-  * This issue is also present in 4.2.0
 * Windows 10
   * Version: 1909
   * Build: 18363.592
